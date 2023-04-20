@@ -1,0 +1,34 @@
+#!/usr/bin/bash
+# File:     addFITShdr
+# Version:  20230205
+# Author:   KOBS/Sifan Kahale
+# Desc:     adds code to add additional fits hdr info to image.py
+
+IMAGE='/opt/indi-allsky/indi_allsky/image.py
+
+sed --in-place=.bak '/        # Add headers from config.*/i\
+        ### ADDED by KOBS/Sifan --------------------------\
+        hdulist[0].header['COMMENT'] = "The following are added from the allsky SQM"\n\
+        with open('/opt/KOBS/allskyscripts/allsky.txt') as allskyData:\
+            for line in allskyData:\
+                data = line.rstrip().split(":")\
+                match data[0]:\
+                    case "UTC time":\
+                        hdulist[0].header['GPSTIME'] = data[1].lstrip()\
+                    case "Skytemp":\
+                        hdulist[0].header['SKYTEMP'] = data[1].lstrip()\
+                    case "Temp":\
+                        hdulist[0].header['ENVTEMP'] = data[1].lstrip()\
+                    case "Hum":\
+                        hdulist[0].header['ENVHUM'] = data[1].lstrip()\
+                    case "DP":\
+                        hdulist[0].header['ENVDEW'] = data[1].lstrip()\
+                    case "Pres":\
+                        hdulist[0].header['ENVPRES'] = data[1].lstrip()\
+ \
+        hdulist[0].header['SQM'] = "" \
+        #-------------------------------------------------\n\
+' $IMAGE
+
+exit
+

@@ -1,0 +1,14 @@
+#!/bin/bash
+#Filename:	Rebrand
+#Version:	20230103
+#Author:	KOBS/Sifan
+#Desc:		Changes browser bar title to SQM
+
+DIRPATH="/opt/indi-allsky/indi_allsky/flask/templates"
+
+for FILE in `grep -l indi-allsky: $DIRPATH/*`
+   do
+	echo "Working on: $FILE"
+	sed -i 's/indi-allsky:/AllSkySqm:/' $FILE
+   done
+

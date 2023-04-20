@@ -1,0 +1,12 @@
+#!/bin/bash
+# File:		setVERSION
+# Version:	20230103
+# Author:	KOBS/Sifan Kahale
+# Desc:		extracts git pull request from the git hash, uses the git api
+
+headPath="/opt/indi-allsky/.git/FETCH_HEAD"
+versionPath="/opt/indi-allsky/VERSION"
+
+ver=$(wget -q https://api.github.com/search/issues?q=sha:`awk '{print $1}' $headPath` -O - | grep number | awk '{print $NF}' | rev | cut -c 2- | rev)
+echo -n "PR: $ver" > $versionPath
+

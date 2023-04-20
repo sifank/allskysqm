@@ -1,0 +1,201 @@
+#!/usr/bin/python3
+# File:         envStatus
+# Version:      20221125
+# Author:       Sifan Kahale
+# Desc:         lists all the allskysqm sensors
+
+import numpy as np
+import board,sys
+import busio, smbus
+import RPi.GPIO as GPIO
+from datetime import datetime
+from dateutil import tz
+from adafruit_ms8607 import MS8607
+from adafruit_htu31d import HTU31D
+import adafruit_tsl2591
+from gps import *
+
+irPort = 1
+ir_addr = 0x5a
+intime = 0
+gain = 0
+sleepint = 0.3
+tz_UTC = tz.tzutc()
+tz_LOC = tz.tzlocal()
+loopout = 10
+
+#-------------------------------------
+# Calc dewpoint from temp and hum
+a = 17.271
+b = 217.7    # deg C
+h2i = .02953 #hectopascals to inches
+
+def dewpoint(T,RH):
+    Td = (b * gamma(T,RH)) / (a - gamma(T,RH))
+    return Td
+
+def gamma(T,RH):
+    g = (a * T / (b + T)) + np.log(RH/100.0)
+    return g
+
+# Create the sensor object using I2C
+i2c = busio.I2C(board.SCL, board.SDA)
+
+#------------------------------------------------
+# HTU31D temp/hum
+# Create the sensor object using I2C
+try:
+    sensor = HTU31D(i2c)
+
+    Temp = sensor.temperature
+    Hum = float(sensor.relative_humidity)
+    Dp = dewpoint(Temp, Hum)
+
+    # Convert to F
+    Temp = Temp * 9.0/5.0 + 32.0
+    Dp = Dp * 9.0/5.0 + 32.0
+    DpDep = Temp - Dp
+
+except:
+    Temp = 0.0
+    Hum = 0.0
+    Dp = 0.0
+    DpDep = 0.0
+    print("Env sensor (HTU31D) not working")
+
+#------------------------------------------------
+# MS8607 temp/hum/pres
+try:
+    sensor = MS8607(i2c)
+
+    caseTemp = sensor.temperature
+    caseHum = float(sensor.relative_humidity)
+    caseDp = dewpoint(caseTemp, caseHum)
+    casePres = sensor.pressure * h2i
+
+    # Convert to F
+    caseTemp = caseTemp * 9.0/5.0 + 32.0
+    caseDp = caseDp * 9.0/5.0 + 32.0
+    caseDpDep = caseTemp - caseDp
+
+except:
+    caseTemp = 0.0
+    caseHum = 0.0
+    caseDp = 0.0
+    caseDpDep = 0.0
+    casePres = 0.0
+    print("Case sensor (MS8607) not working")
+
+#------------------------------------------------
+# IR Sky Temp
+try:
+    bus = smbus.SMBus(irPort)
+    reading = bus.read_word_data(ir_addr, 0x07)
+    skyTemp = reading * .02 - 273.15
+except:
+    skyTemp = 0.0
+    print("IR Sky probe not working")
+
+if (skyTemp < -30):
+        skyTemp = 0
+
+#------------------------------------------------
+# lux sqm monitor
+lux = 0.0
+
+def readlux(intime, gain):
+    sqm.gain = gain
+    sqm.integration_time = intime
+    time.sleep(sleepint)
+    try:
+        slux = sqm.lux
+    except:
+        slux = 0.0
+        print("Issue reading Lux")
+        sys.exit(1)
+    return slux
+
+try:
+    sqm = adafruit_tsl2591.TSL2591(i2c)
+    readlux(0,0)
+    while (lux == 0):
+        lux = readlux(intime,gain)
+
+        if (lux >= 1):
+            break
+
+        if (intime < 5):
+            intime += 1
+            lux = readlux(intime,gain)
+
+        elif ((lux == 0) & (gain < 48)):
+                gain += 16
+                lux = readlux(intime,gain)
+
+except:
+    lux = 0.0
+    print("Problem reading Lux")
+
+
+#------------------------------------------------
+# GPS data
+
+latitude = 999.9999999
+longitude = 999.9999999
+ctime = datetime.now().strftime("%Y-%m-%dT %H:%M:%S")
+utime = datetime.utcnow().strftime("%Y-%m-%dT %H:%M:%S")
+
+try:
+    gpsd = gps(mode=WATCH_ENABLE|WATCH_NEWSTYLE)
+    while loopout:
+        report = gpsd.next() #
+        if report['class'] == 'TPV':
+            gpstime =  getattr(report,'time','')
+            if (len(gpstime) != 0) and (gpstime != 'nan'):
+                gpstime = datetime.strptime(gpstime, "%Y-%m-%dT%H:%M:%S.%fZ")
+                utime = gpstime.strftime("%Y%m%dT%H%M%S")
+                gpstime = gpstime.replace(tzinfo=tz_UTC)
+                ctime = gpstime.astimezone(tz_LOC).strftime("%Y%m%d %H:%M:%S")
+
+                latitude = getattr(report, 'lat', 999.9999999)
+                longitude = getattr(report, 'lon', 999.9999999)
+
+                break
+
+        time.sleep(.4)
+        loopout -= 1
+
+    else:
+        print("GPS not working")
+
+except:
+    print("GPS not working")
+
+#-------------------------------------
+# these are not implemented
+WSpeed = 0
+WDir = 0
+WGust = 0
+Rain = 0
+
+#-------------------------------------
+# print 
+ntime = datetime.now().strftime("%H:%M ")
+
+print("Local time: %s" % ctime)
+print("UTC time:   %s" % utime)
+print("Lat:         % 11.7f " % latitude)
+print("Lon:        % 11.7f " % longitude)
+print("DpDep:      %5.1f F" % DpDep)
+print("Temp:       %5.1f F" % Temp)
+print("Hum:        %5.1f %%" % Hum)
+print("DP:         %5.1f F" % Dp)
+print("Case Temp:  %5.1f F" % caseTemp)
+print("Case Hum:   %5.1f %%" % caseHum)
+print("Pres:        %5.2f inHg" % casePres)
+print("Skytemp:     %5.2f C" % skyTemp)
+print("Lux:        % 8.4f" % lux)
+print("Visual:       %6.4f" % sqm.visible)
+print("IR:           %6.4f" % sqm.infrared)
+
+sys.exit(0)

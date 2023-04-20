@@ -1,0 +1,48 @@
+#! /usr/bin/python3
+# File:     infoboxupdater
+# Version:  20230103
+# Author:   KOBS/Sifan Kahale
+# Desc:     prints out gps status and number of fits files
+ 
+from gps import *
+from datetime import datetime
+from dateutil import tz
+import time, sys, os, subprocess
+loopout = 6
+
+#   Pull Request (version)
+#--------------------------------
+with open('/opt/indi-allsky/VERSION', 'r') as f:
+    print(f.read())
+
+#   GPS status
+#--------------------------------
+try:
+    session = gps(mode=WATCH_ENABLE|WATCH_NEWSTYLE)
+    while 0 == session.read():
+        if not (MODE_SET & session.valid):
+            continue # not a TPV record
+
+        gpsfix = session.fix.mode
+        print('Fix:  %s' % (("Invalid", "NO_FIX", "2D", "3D")[gpsfix]))
+        if (not gpsfix):
+            break
+
+        loopout -= 1
+        if loopout:
+            break
+
+except:
+    print("Fix: No GPS")
+
+finally:
+    try:
+        session.close()
+    except:
+        pass
+
+
+#   Count of how many fits files
+#--------------------------------
+print("#Fits: %s" % sum(f.endswith("fit") for root, dirs, files in os.walk("/var/www/html/allsky/images") for f in files))
+
