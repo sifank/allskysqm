@@ -1,0 +1,54 @@
+#! /usr/bin/python3
+# File:     setGPStime
+# Version:  20230103
+# Author:   KOBS/Sifan Kahale
+# Desc:     sets system time from gps
+ 
+from gps import *
+from datetime import datetime
+from dateutil import tz
+import time, sys, os, subprocess
+loopout = 120
+timewait = .8
+
+tz_UTC = tz.tzutc()
+tz_LOC = tz.tzlocal()
+ctime = datetime.now().astimezone(tz_LOC)
+    
+try:
+    session = gps(mode=WATCH_ENABLE|WATCH_NEWSTYLE)
+    while 0 == session.read():
+        if not (MODE_SET & session.valid):
+            continue # not a TPV record
+
+        gpsfix = session.fix.mode
+        print('Fix:  %s' % (("Invalid", "NO_FIX", "2D", "3D")[gpsfix]))
+        if (not gpsfix):
+            break
+
+        gpstime = session.fix.time
+        if (len(gpstime) != 0) and (gpstime != 'nan'):
+            gpsutctime = datetime.strptime(gpstime, "%Y-%m-%dT%H:%M:%S.%fZ")
+            gtime = gpsutctime.replace(tzinfo=tz_UTC)
+            ltime = gtime.astimezone(tz_LOC)
+
+            print("GPS UTC time:   %s" % gtime.strftime("%Y-%m-%d %H:%M:%S"))
+            print("Current time:   %s" % ctime.strftime("%Y-%m-%d %H:%M:%S"))
+            print("GPS local time: %s" % ltime.strftime("%Y-%m-%d %H:%M:%S"))
+
+            print("Delta:          %s sec" % '{:> 12.7f}'.format((ctime - ltime).total_seconds()))
+
+            res = subprocess.Popen("timedatectl set-ntp false", shell=True)
+            time.sleep(timewait)
+            res = subprocess.Popen(("timedatectl set-time \'%s\'" % ltime.strftime("%Y-%m-%d %H:%M:%S")), shell=True)
+            res = subprocess.Popen(("hwclock -systohc", shell=True)
+            break
+
+        loopout -= 1
+        if loopout:
+            break
+
+except:
+    res = subprocess.Popen("timedatectl set-ntp true", shell=True)
+    print("GPS no fix")
+
