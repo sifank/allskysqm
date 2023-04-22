@@ -14,7 +14,8 @@ sed --in-place=.bak '/        # Add headers from config.*/i\
                 data = line.rstrip().split(":")\
                 match data[0]:\
                     case "UTC time":\
-                        hdulist[0].header['GPSTIME'] = data[1].lstrip()\
+                        hdulist[0].header['GPSTIME'] = "%s:%s:%s" % (data[1].lstrip(), data[2].lstrip(), data[3].lstrip())
+)\
                     case "Skytemp":\
                         hdulist[0].header['SKYTEMP'] = data[1].lstrip()\
                     case "Temp":\
