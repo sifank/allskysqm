@@ -1,20 +1,24 @@
 #! /usr/bin/python3
 # File:     setGPStime
-# Version:  20230103
+# Version:  20230507
 # Author:   KOBS/Sifan Kahale
-# Desc:     sets system time from gps
- 
+# Desc:     waits for a gps fix then sets both sys and hwclock
+#           Add to crontab:
+#           # Wait for GPS to get fix, then set sys and hwclock from GPS
+#           @reboot /opt/KOBS/setGPStime
+
 from gps import *
 from datetime import datetime
 from dateutil import tz
 import time, sys, os, subprocess
 loopout = 120
 timewait = .8
+loopitr = 300
 
 tz_UTC = tz.tzutc()
 tz_LOC = tz.tzlocal()
 ctime = datetime.now().astimezone(tz_LOC)
-    
+
 try:
     session = gps(mode=WATCH_ENABLE|WATCH_NEWSTYLE)
     while 0 == session.read():
@@ -24,7 +28,8 @@ try:
         gpsfix = session.fix.mode
         print('Fix:  %s' % (("Invalid", "NO_FIX", "2D", "3D")[gpsfix]))
         if (not gpsfix):
-            break
+            time.sleep(loopitr)
+            continue
 
         gpstime = session.fix.time
         if (len(gpstime) != 0) and (gpstime != 'nan'):
@@ -41,7 +46,7 @@ try:
             res = subprocess.Popen("timedatectl set-ntp false", shell=True)
             time.sleep(timewait)
             res = subprocess.Popen(("timedatectl set-time \'%s\'" % ltime.strftime("%Y-%m-%d %H:%M:%S")), shell=True)
-            res = subprocess.Popen(("hwclock -systohc", shell=True)
+            res = subprocess.Popen("hwclock --systohc", shell=True)
             break
 
         loopout -= 1
@@ -51,4 +56,3 @@ try:
 except:
     res = subprocess.Popen("timedatectl set-ntp true", shell=True)
     print("GPS no fix")
-
