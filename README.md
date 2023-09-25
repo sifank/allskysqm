@@ -1,4 +1,8 @@
 # allskysqm
+
+See the wiki on this site (above) for all information.
+
+Below is kept here for reference:
 Sky quality allsky cam based on Aaron's indi-allsky
 
 
