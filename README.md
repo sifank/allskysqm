@@ -362,15 +362,10 @@ Add envParams to txt file for allsky display
 Add to crontab:
 
     run: sudo crontab -e
-
-    # m h  dom mon dow   command
-
     # Set the system clock to the RTC
     @reboot /usr/sbin/hwclock --hctosys
-
     # Every 2 min update stats for allsky image
     */2 * * * * /opt/KOBS/allskyscripts/allskyupdater > /opt/KOBS/allskyscripts/allsky.txt
-
     # Every 2 min update info box info
     */2 * * * * /opt/KOBS/allskyscripts/infoboxupdater > /opt/KOBS/allskyscripts/infobox.html
 
