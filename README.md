@@ -342,7 +342,7 @@ GPS
 
     GPS start script (not needed now) 
 
-Setup KOBS
+Setup KOBS:
 
 mkdir /opt/KOBS
 apt -y install i2c-tools  python3-rpi.gpio python3-smbus kate python3-pip locate
@@ -359,7 +359,7 @@ Add envParams to txt file for allsky display
 
     create /opt/KOBS/allskyscritps/allskyupdater 
 
-crontab
+Add to crontab:
 
     run: sudo crontab -e
 
@@ -426,10 +426,10 @@ Install indi-allsky
     ​Following indi-allsky
 
     # as root
-    chmod 777 /opt
-    # as user
     cd /opt
     git clone https://github.com/aaronwmorris/indi-allsky.git
+    chown -R [usr:grp] indi-allsky
+    # as usr
     cd indi-allsky
     ./misc/build_indi.sh
     ./setup.sh
