@@ -19,17 +19,19 @@ Notes:
     Optionally you can ssh to connect: ​sqm@allskysqm.local
         Login: sqm/allskysqm 
     Optionally you can vnc: vncviewer allskysqm:1
-        Passwd: allskysqm 
+        Passwd: [assigned password]
+
+    Do change these passwds once this is running
 
 Projected use sequence:
 
     Apply power and wait ~1 min for startup
     Connect to WiFi hotspot:
-        allskysqm/allskysqm 
+        allskysqm/[assigned password]
     Connect to sqm web pages:
         ​https://allskysqm/ or ​https://allskysqm.local/ or ​https://192.168.10.1/tps://allskysqm/ or ​https://allskysqm.local/ or ​https://192.168.10.1/
         Note: first time it will complain about the certificate, scroll down and answer yes to accept and probably yes again
-        Login: admin/allskysqm 
+        Login: admin/[assigned password]
     Wait for a current image on the 'Latest' page, refresh as needed
     Enter location and observer on 'Config' page in the FITs fields
     Verify settings
@@ -147,7 +149,7 @@ apt autoclean
 
 setup hotspot
 
-nmcli d wifi hotspot ifname wlan0 ssid sqm password allskysqm
+nmcli d wifi hotspot ifname wlan0 ssid sqm password [assign passwd]
 
     Modify /etc/NetworkManager/system-connections/Hotspot.nmconnection - set: autoconnect=true 
 
@@ -450,7 +452,7 @@ source virtualenv/indi-allsky/bin/activate
 #New Users
 ./misc/usertool.py adduser -u sqm
 
-#Change password (set to allskysqm)
+#Change password (set to [assigned password])
 ./misc/usertool.py resetpass -u sqm
 
 #Set user as administrator
@@ -632,10 +634,10 @@ Cleanup before release
             remove 10* and 20*
             move ~save/01* . 
     rename to allskysqm
-    change passwords for root, sqm to allskysqm
-    change password for admin for web to allskysqm
+    change passwords for root, sqm to [assigned password]
+    change password for admin for web to [assigned password]
         htpasswd /etc/indi-allsky/apache.passwd admin 
-    change vnc password to allskysqm (vncpasswd)
+    change vnc password to [assigned password]
     reset config for INDI CONFIG
     copy in from /opt/KOBS/sqm: envStatus, startGPSD
     remove dynSysInfo and staticSysInfo 
