@@ -115,15 +115,6 @@ Using server only: ubuntu-22.04.1-preinstalled-server-arm64+raspi.img
 apt -y install net-tools openssh-server
 ifconfig #note address
 
-sudo scp sifan@192.168.1.15:/etc/hosts /etc/
-
-bashrc
-
-scp kanto:.bashrc .
-vi .bashrc   # remove the last line (conda) and comment out the BLINKA line
-. .bashrc
-sudo cp /home/sifan/.bashrc /root/
-
 Update to full vi
 
 apt-get update
